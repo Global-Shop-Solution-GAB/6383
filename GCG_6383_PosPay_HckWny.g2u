@@ -1,0 +1,445 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..create
+Gui.Form..caption("Positive Pay")
+Gui.Form..size(13560,9885)
+Gui.Form..position(0,0)
+Gui.Form..event(UnLoad,Form_UnLoad)
+Gui.Form..forecolor(0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..mousepointer(0)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form.dpDateVend.create(datepicker)
+Gui.Form.dpDateVend.size(1935,285)
+Gui.Form.dpDateVend.position(165,1035)
+Gui.Form.dpDateVend.defaultvalue("")
+Gui.Form.cmdOKVend.create(button)
+Gui.Form.cmdOKVend.caption("OK")
+Gui.Form.cmdOKVend.size(855,375)
+Gui.Form.cmdOKVend.position(2265,990)
+Gui.Form.cmdOKVend.event(Click,cmdOKVend_Click)
+Gui.Form.cmdOKVend.defaultvalue("")
+Gui.Form.lbl1.Create(Label,"Select Date",True,1035,255,0,165,825,True,0,"Arial",8,-2147483633,0)
+Gui.Form.txtExportFolder.Create(TextBox,"",True,5580,300,0,135,330,True,0,"Arial",8,-2147483643,1)
+Gui.Form.lbl2.Create(Label,"Export Folder",True,1215,255,0,135,105,True,0,"Arial",8,-2147483633,0)
+Gui.Form.cmdBrowseExportFolder.Create(Button)
+Gui.Form.cmdBrowseExportFolder.Size(570,375)
+Gui.Form.cmdBrowseExportFolder.Position(5820,285)
+Gui.Form.cmdBrowseExportFolder.Caption("^")
+Gui.Form.cmdBrowseExportFolder.Event(Click,cmdBrowseExportFolder_Click)
+Gui.Form.txtBankAccount.Create(TextBox,"3007010790",False,1080,300,0,6705,330,True,1,"Arial",8,-2147483643,1)
+Gui.Form.txtBankAccount.DefaultValue("")
+Gui.Form.txtBankAccount.MaxLength(10)
+Gui.Form.lbl4.Create(Label,"Bank Account",False,1275,255,0,6705,120,True,0,"Arial",8,-2147483633,0)
+Gui.Form.gsVendorChecks.Create(GsGridControl)
+Gui.Form.gsVendorChecks.Size(10380,7395)
+Gui.Form.gsVendorChecks.Position(135,1470)
+Gui.Form.cmdRun.Create(Button)
+Gui.Form.cmdRun.Size(855,375)
+Gui.Form.cmdRun.Position(120,8955)
+Gui.Form.cmdRun.Caption("Run")
+Gui.Form.cmdRun.DefaultValue("")
+Gui.Form.cmdRun.Event(Click,cmdRun_Click)
+Gui.Form.gsEmplChecks.Create(GsGridControl)
+Gui.Form.gsEmplChecks.Size(9720,6885)
+Gui.Form.gsEmplChecks.Position(10680,1980)
+Gui.Form.gsEmplChecks.Visible(False)
+Gui.Form.chkVend.Create(CheckBox)
+Gui.Form.chkVend.Size(1560,360)
+Gui.Form.chkVend.Position(135,810)
+Gui.Form.chkVend.Caption("Vendor Checks")
+Gui.Form.chkVend.Value(1)
+Gui.Form.chkVend.Visible(False)
+Gui.Form.chkEmp.Create(CheckBox)
+Gui.Form.chkEmp.Size(2040,360)
+Gui.Form.chkEmp.Position(10680,810)
+Gui.Form.chkEmp.Caption("Employee Checks")
+Gui.Form.chkEmp.Visible(False)
+Gui.Form.lbl3.Create(Label,"Select Date",False,1035,255,0,10680,1275,True,0,"Arial",8,-2147483633,0)
+Gui.Form.dpEmp.Create(DatePicker)
+Gui.Form.dpEmp.Size(1935,285)
+Gui.Form.dpEmp.Position(10680,1485)
+Gui.Form.dpEmp.DefaultValue("")
+Gui.Form.dpEmp.Visible(False)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+'GCG_6383
+'Format to match Positive Pay file for Hancock Whitney bank
+' NL, June 15, 2021
+
+'*******************************
+'BN, Oct 11, 2019
+'Customer: ToolCraft
+'This project will generate a positive pay file with layout: Account Number, Check Number, Amount, Issue Date
+
+f.Intrinsic.Control.Try
+	v.Local.sError.Declare
+	v.Local.sDefaultfolder.Declare
+	v.Local.bExist.Declare
+	v.Local.bInGroup.Declare
+	
+	'Check Security Group
+	f.Global.Security.IsInGroup(v.Caller.User,"POSPAY",V.Caller.CompanyCode,V.Local.bInGroup)
+	F.Intrinsic.Control.If(V.Local.bInGroup.Not)
+		F.Intrinsic.UI.Msgbox("You are not in Security Group to use this program.","Attention")
+		f.Intrinsic.Control.CallSub("Unload")
+	F.Intrinsic.Control.EndIf	
+
+	F.Odbc.Connection!Conx.OpenCompanyConnection
+	
+	'Check default folder
+	f.Intrinsic.String.Build("{0}\Custom\6383",v.Caller.GlobalDir,v.Local.sDefaultfolder)
+	f.Intrinsic.File.DirExists(v.Local.sDefaultfolder,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.File.CreateDir(v.Local.sDefaultfolder)
+	f.Intrinsic.Control.EndIf	
+	
+	'Default Positive Pay folder that store the output file.
+	f.Intrinsic.String.Build("{0}\Custom\6383\{1}",v.Caller.GlobalDir,v.Caller.CompanyCode,v.Local.sDefaultfolder)
+	f.Intrinsic.File.DirExists(v.Local.sDefaultfolder,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.File.CreateDir(v.Local.sDefaultfolder)
+	f.Intrinsic.Control.EndIf
+	'Set Default folder
+	gui.Form.txtExportFolder.Text(v.Local.sDefaultfolder)	
+
+	gui.Form..Show
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.cmdOKVend_Click.Start
+'Verify if there are checks for the selected date. If yes, show the grid for the user 
+f.Intrinsic.Control.Try	
+	V.Local.sError.Declare
+	v.Local.sSQL.Declare
+	v.Local.bExist.Declare
+	V.Local.sDateSelected.Declare
+	v.Local.iCnt.Declare
+	v.Local.bNumeric.Declare
+	
+	'Check Export Folder
+	f.Intrinsic.File.DirExists(v.Screen.Form!txtExportFolder.Text.Trim,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.UI.Msgbox("Export Folder does not exist")
+		f.Intrinsic.Control.ExitSub
+	f.Intrinsic.Control.EndIf	
+	
+	f.Intrinsic.UI.InvokeWaitDialog("Processing...")
+	
+	'format date
+	F.Intrinsic.String.Format(V.Screen.Form!dpDateVend.Value,"YYYY-MM-DD",V.Local.sDateSelected)	
+	
+	'select data for correct date and account number
+'	F.intrinsic.string.Build("select Ck_Date,ltrim(rtrim(Ck_no)) as CK_No,Payee, Amount, Vend_No from V_CHECKS_LOG where CK_DATE= '{0}' and Ck_Or_Void = 'C' order by CK_NO",v.Local.sDateSelected,V.Local.sSQL)
+	'*********************
+	'GCG_6383
+	'get both check and void
+	F.intrinsic.string.Build("select Ck_Date,ltrim(rtrim(Ck_no)) as CK_No,Payee, Amount, Vend_No, Ck_Or_Void from V_CHECKS_LOG where CK_DATE= '{0}' order by CK_NO",v.Local.sDateSelected,V.Local.sSQL)
+	
+	
+	f.Intrinsic.Control.If(v.DataTable.Vend.Exists)
+		f.Data.DataTable.Close("Vend")
+	f.Intrinsic.Control.EndIf
+	f.Data.DataTable.CreateFromSQL("Vend","conx",v.Local.sSQL,True)	
+	f.Intrinsic.Control.If(v.DataTable.Vend.RowCount,=,0)
+		f.Intrinsic.UI.CloseWaitDialog
+		f.Intrinsic.UI.Msgbox("No checks to export")	
+		gui.Form..Show
+		f.Intrinsic.Control.ExitSub
+	f.Intrinsic.Control.EndIf	
+
+	f.Data.DataTable.AddColumn("Vend","Exclude","Boolean",False)
+	
+	f.Intrinsic.Control.For(v.Local.iCnt,v.DataTable.Vend.RowCount--,0,-1)
+		f.Intrinsic.Math.IsNumeric(v.DataTable.Vend(v.Local.iCnt).CK_No!FieldValString,v.Local.bNumeric)
+		f.Intrinsic.Control.If(v.Local.bNumeric.Not)
+			f.Data.DataTable.DeleteRow("Vend",v.Local.iCnt)
+		f.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.Next(v.Local.iCnt)
+	f.Data.DataTable.AcceptChanges("Vend")	
+	
+	f.Intrinsic.UI.CloseWaitDialog
+	
+	gui.Form.gsVendorChecks.AddGridviewFromDataTable("GVVend","Vend")
+
+	'General format
+	gui.Form.gsVendorChecks.SetGridViewProperty("GVVend","AllowSort",True)
+	gui.Form.gsVendorChecks.SetGridViewProperty("GVVend","AllowFilter",True)
+	gui.Form.gsVendorChecks.SetGridViewProperty("GVVend","OptionsFindAlwaysVisible",True)
+	gui.Form.gsVendorChecks.SetGridViewProperty("GVVend","OptionsViewShowAutoFilterRow",True)
+	gui.Form.gsVendorChecks.SetGridViewProperty("GVVend","OptionsDetailShowDetailTabs",True)
+	gui.Form.gsVendorChecks.SetGridViewProperty("GVVend","OptionsViewShowGroupPanel",True)
+	
+	'Column format	
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Exclude","AllowEdit",True)
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Exclude","ReadOnly",False)
+	'Width
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Vend_No","Width","40")
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Exclude","Width","50")
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","CK_Date","Width","65")
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Amount","Width","55")
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Ck_Or_Void","Width","50")
+	
+	'Header
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Exclude","HeaderHAlignment","Center")
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Ck_Or_Void","CellHAlignment","Center")
+	
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Amount","HeaderHAlignment","far")
+	'Header Font Bold
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Ck_Date","HeaderFontBold",True)
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Ck_No","HeaderFontBold",True)
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Amount","HeaderFontBold",True)
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Vend_No","HeaderFontBold",True)
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Exclude","HeaderFontBold",True)
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Payee","HeaderFontBold",True)
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Ck_Or_Void","HeaderFontBold",True)
+	
+	'Caption
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Vend_No","Caption","Vendor")
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","CK_Date","Caption","Check Date")
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","CK_No","Caption","Check Number")	
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Ck_Or_Void","Caption","Check/Void")
+	
+	'Numeric
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","Amount","DisplayCustomNumeric","###,###,###,##0.00")	
+	'Custom date
+	gui.Form.gsVendorChecks.SetColumnProperty("GVVend","CK_Date","DisplayCustomDatetime","d")		
+	
+	gui.Form.gsVendorChecks.MainView("GVVend")
+	
+	f.Intrinsic.UI.CloseWaitDialog
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdOKVend_Click.End
+
+Program.Sub.cmdRun_Click.Start
+f.Intrinsic.Control.Try	
+	'string
+	V.Local.sError.Declare
+	V.local.sExport.declare
+	v.Local.sFile.Declare
+	v.Local.sMsg.Declare
+	V.Local.sVenDate.Declare
+	v.Local.sEmpDate.Declare
+	v.Local.sDir.Declare
+	v.Local.iCnt.Declare
+	
+	v.Local.sAccount.Declare
+	v.Local.sCheckNumber.Declare
+	v.Local.sAmount.Declare
+	v.Local.sIssueDate.Declare
+	v.Local.dIssueDate.Declare
+	v.Local.sContent.Declare
+	v.Local.bExist.Declare
+	V.Local.sTime.Declare
+	v.Local.sFileName.Declare
+	
+	'********************
+	'GCG_6383
+	v.Local.sChkOrVoid.Declare(String)
+	v.Local.sVendor.Declare(String)
+	v.Local.sVendorNo.Declare(String)
+	v.Local.sSQL.Declare(String)
+	
+	v.Local.sTime.Set(v.Ambient.Now.FormatHHNNSS)
+	f.Intrinsic.UI.InvokeWaitDialog("Processing...")
+	
+	'Check directory
+	v.Local.sDir.Set(v.Screen.Form!txtExportFolder.Text.Trim)
+	f.Intrinsic.File.DirExists(v.Local.sDir,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist.Not)
+		f.Intrinsic.UI.CloseWaitDialog
+		f.Intrinsic.UI.Msgbox("Export Folder does not exist")		
+		f.Intrinsic.Control.ExitSub
+	f.Intrinsic.Control.EndIf	
+	
+	'format date
+	F.Intrinsic.String.Format(V.Screen.Form!dpDateVend.Value,"YYYY-MM-DD",V.Local.sVenDate)
+	f.Intrinsic.String.Format(V.Screen.Form!dpEmp.Value,"YYYY-MM-DD",V.Local.sEmpDate)
+	
+	f.Intrinsic.Control.If(v.Screen.Form!chkVend.Value,=,0,and,v.Screen.Form!chkEmp.Value,=,0)
+		f.Intrinsic.UI.CloseWaitDialog
+		f.Intrinsic.UI.Msgbox("Please select Vendor Checks or Employee Checks","Attention")
+		f.Intrinsic.Control.ExitSub	
+	f.Intrinsic.Control.ElseIf(v.Screen.Form!chkVend.Value,=,1,and,v.Screen.Form!chkEmp.Value,=,0)
+		f.Intrinsic.String.Build("{0}\Vend_{1}_Gen_{2}_{3}.txt",v.local.sDir,v.Local.sVenDate.Right5,v.Ambient.Date.FormatYYYYMMDD,v.local.sTime,v.Local.sFile)	
+	f.Intrinsic.Control.ElseIf(v.Screen.Form!chkVend.Value,=,0,and,v.Screen.Form!chkEmp.Value,=,1)
+		f.Intrinsic.String.Build("{0}\Emp_{1}_Gen_{2}_{3}.txt",v.local.sDir,v.Local.sEmpDate.Right5,v.Ambient.Date.FormatYYYYMMDD,v.local.sTime,v.Local.sFile)
+	f.Intrinsic.Control.ElseIf(v.Screen.Form!chkVend.Value,=,1,and,v.Screen.Form!chkEmp.Value,=,1)
+		f.Intrinsic.String.Build("{0}\Vend_{1}_Emp_{2}_Gen_{3}_{4}.txt",v.local.sDir,v.Local.sVenDate.Right5,v.Local.sEmpDate.Right5,v.Ambient.Date.FormatYYYYMMDD,v.local.sTime,v.Local.sFile)
+	f.Intrinsic.Control.EndIf
+
+	'1/Bank Account
+	f.Intrinsic.String.LPad(v.Screen.Form!txtBankAccount.Text.Trim,"0",10,v.Local.sAccount)
+
+	'***Process Vendor Checks
+	f.Intrinsic.Control.If(v.DataTable.Vend.Exists,=,True,and,v.Screen.Form!chkVend.Value,=,1)	
+		f.Data.DataView.Create("Vend","VendDV",22,"Exclude = 0","")
+		
+		'connect DB to get Vendor's full name
+		f.ODBC.Connection!Con.OpenCompanyConnection
+		
+		f.Intrinsic.Control.For(v.Local.iCnt,0,v.DataView.Vend!VendDV.RowCount--,1)
+			'2/Check number
+			f.Intrinsic.String.LPad(v.DataView.Vend!VendDV(v.Local.iCnt).Ck_No!FieldValString,"0",10,v.Local.sCheckNumber)
+			'3/Check Amount
+			f.Intrinsic.String.Format(v.DataView.Vend!VendDV(v.Local.iCnt).Amount!FieldValString,"#.00",v.Local.sAmount)
+			F.Intrinsic.String.Replace(V.Local.sAmount,".","",V.Local.sAmount)
+			F.Intrinsic.String.LPad(V.Local.sAmount,"0",13,v.Local.sAmount)
+			'4/Issue date
+			v.Local.dIssueDate.Set(v.DataView.Vend!VendDV(v.Local.iCnt).Ck_Date!FieldValString)
+			f.Intrinsic.String.Format(v.Local.dIssueDate,"YYYYMMDD",v.Local.sIssueDate)
+			
+			'*******************
+			'GCG_6383
+'			5/Check or Void
+			v.Local.sChkOrVoid.Set(v.DataTable.Vend!VendDV(v.Local.iCnt).Ck_Or_Void!FieldValString)
+			
+			f.Intrinsic.Control.If(v.Local.sChkOrVoid,=,"V")
+				v.Local.sChkOrVoid.Set("Void")
+			f.Intrinsic.Control.Else
+				v.Local.sChkOrVoid.Set("IS")
+			f.Intrinsic.Control.EndIf
+			
+			'6/ Vendor
+			v.Local.sVendorNo.Set(v.DataView.Vend!VendDV(v.Local.iCnt).Vend_No!FieldValTrim)
+			
+			'Get Vendor by VendorNo
+			f.Intrinsic.String.Build("Select RTRIM(NAME_VENDOR) from V_VENDOR_MASTER where VENDOR='{0}'", v.Local.sVendorNo, v.Local.sSQL)
+			
+			f.ODBC.Connection!Con.ExecuteAndReturn(v.Local.sSQL, v.Local.sVendor)
+			
+			'if no vendor is found, use the data in the dataview
+			f.Intrinsic.Control.If(v.Local.sVendor.Length,=,0)
+				v.Local.sVendor.Set(v.DataView.Vend!VendDV(v.Local.iCnt).Payee!FieldValTrim)
+			f.Intrinsic.Control.EndIf
+			
+'			f.Intrinsic.Control.If(v.Local.iCnt,=,0)
+'				f.Intrinsic.String.Build("{1}{0}{2}{0}{3}{0}{4}", " ",v.Local.sCheckNumber,v.Local.sAmount,v.Local.sIssueDate,v.DataView.Vend!VendDV(v.Local.iCnt).Payee!FieldValTrim,v.Local.sContent)
+'			f.Intrinsic.Control.Else
+'				f.Intrinsic.String.Build("{5}{6}{1}{0}{2}{0}{3}{0}{4}", " ",v.Local.sCheckNumber,v.Local.sAmount,v.Local.sIssueDate,v.DataView.Vend!VendDV(v.Local.iCnt).Payee!FieldValTrim, V.Local.sContent,V.Ambient.NewLine,v.Local.sContent)
+'			f.Intrinsic.Control.EndIf	
+			
+			'******************
+			'GCG_6383
+			'rebuild file with Check or Void
+			f.Intrinsic.Control.If(v.Local.iCnt,=,0)
+				f.Intrinsic.String.Build("{1}{0}{2}{0}{3}{0}{4}{0}{5}", " ",v.Local.sCheckNumber,v.Local.sAmount,v.Local.sIssueDate, v.Local.sChkOrVoid, v.Local.sVendor,v.Local.sContent)
+
+				
+			f.Intrinsic.Control.Else
+				f.Intrinsic.String.Build("{5}{6}{1}{0}{2}{0}{3}{0}{7}{0}{4}", " ",v.Local.sCheckNumber,v.Local.sAmount,v.Local.sIssueDate,v.Local.sVendor, V.Local.sContent,V.Ambient.NewLine, v.Local.sChkOrVoid, v.Local.sContent)
+				
+			f.Intrinsic.Control.EndIf
+	
+		f.Intrinsic.Control.Next(v.Local.iCnt)
+		
+		f.Data.DataView.Close("Vend","VendDV")
+		
+		'close DB
+		f.ODBC.Connection!Con.Close
+		
+	f.Intrinsic.Control.EndIf	
+	
+'	'***Process Employee Checks
+'	f.Intrinsic.Control.If(v.DataTable.Emp.Exists,=,True,and,v.Screen.Form!chkEmp.Value,=,1)	
+'		f.Data.DataView.Create("Emp","EmpDV",22,"Exclude = 0","")
+'	
+'		f.Intrinsic.Control.For(v.Local.iCnt,0,v.DataView.Emp!EmpDV.RowCount--,1)
+'			'2/Check number
+'			f.Intrinsic.String.LPad(v.DataView.Emp!EmpDV(v.Local.iCnt).Ck_No!FieldValString,"0",10,v.Local.sCheckNumber)
+'			'3/Check Amount
+'			f.Intrinsic.String.Format(v.DataView.Emp!EmpDV(v.Local.iCnt).Amount!FieldValString,"#.00",v.Local.sAmount)
+'			'4/Issue date
+'			v.Local.dIssueDate.Set(v.DataView.Emp!EmpDV(v.Local.iCnt).Ck_Date!FieldValString)
+'			f.Intrinsic.String.Format(v.Local.dIssueDate,"MM/DD/YYYY",v.Local.sIssueDate)
+'				
+'			f.Intrinsic.Control.If(v.Local.sContent,=,"",and,v.Local.iCnt,=,0)
+'				f.Intrinsic.String.Build("{0},{1},{2},{3},{4}",v.Local.sAccount,v.Local.sCheckNumber,v.DataView.Emp!EmpDV(v.Local.iCnt).Payee!FieldValTrim,v.Local.sAmount,v.Local.sIssueDate,v.Local.sContent)
+'			f.Intrinsic.Control.Else
+'				f.Intrinsic.String.Build("{0}{1}{2},{3},{4},{5},{6}",v.Local.sContent,v.Ambient.NewLine,v.Local.sAccount,v.Local.sCheckNumber,v.DataView.Emp!EmpDV(v.Local.iCnt).Payee!FieldValTrim,v.Local.sAmount,v.Local.sIssueDate,v.Local.sContent)
+'			f.Intrinsic.Control.EndIf			
+'	
+'		f.Intrinsic.Control.Next(v.Local.iCnt)
+'		f.Data.DataView.Close("Emp","EmpDV")
+'	f.Intrinsic.Control.EndIf		
+	
+	f.Intrinsic.Control.If(v.Local.sContent,=,"")
+		f.Intrinsic.UI.CloseWaitDialog
+		f.Intrinsic.UI.Msgbox("No data to export.","Attention")
+		f.Intrinsic.Control.ExitSub
+	f.Intrinsic.Control.EndIf
+
+	'Write file
+	f.Intrinsic.File.String2File(v.Local.sFile,v.Local.sContent)
+	
+	'Msg Done and unload
+	f.Intrinsic.UI.CloseWaitDialog
+	f.Intrinsic.String.Replace(v.Local.sFile,v.Screen.Form!txtExportFolder.Text.Trim,"",v.Local.sFileName)
+	f.Intrinsic.String.Replace(v.Local.sFileName,"\","",v.Local.sFileName)
+	f.Intrinsic.String.Build("Generated file{0}Folder: {1}{0}File Name: {2}",v.Ambient.NewLine,v.Screen.Form!txtExportFolder.Text.Trim,v.Local.sFileName,v.Local.sMsg)
+	f.Intrinsic.UI.Msgbox(v.Local.sMsg,"Done")
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}GAB Version: {5}}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub("Unload")
+F.Intrinsic.Control.EndTry
+
+Program.Sub.cmdRun_Click.End
+
+Program.Sub.Form_UnLoad.Start
+f.Intrinsic.Control.CallSub("Unload")
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.UnLoad.Start
+f.Intrinsic.Control.Try
+	v.Local.sError.Declare
+
+	F.Intrinsic.Control.If(V.ODBC.conx.State,=,1)
+		F.ODBC.Connection!conx.close
+	F.Intrinsic.Control.EndIf
+	
+	f.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	f.Intrinsic.String.Build("Subroutine Error {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End	
+F.Intrinsic.Control.EndTry
+Program.Sub.UnLoad.End
+
+Program.Sub.cmdBrowseExportFolder_Click.Start
+'Browse Export Folder
+f.Intrinsic.Control.Try
+	v.Local.sError.Declare
+	v.Local.sPath.Declare
+	
+	F.Intrinsic.UI.FolderBrowser("Select Folder for Path",V.Local.sPath)
+	f.Intrinsic.Control.If(v.Local.sPath.IsCancel,=,False)
+		gui.Form.txtExportFolder.Text(v.Local.sPath)
+	f.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	f.Intrinsic.String.Build("Subroutine Error {0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End	
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdBrowseExportFolder_Click.End
+
+Program.Sub.Comments.Start
+Program.Sub.Comments.End
